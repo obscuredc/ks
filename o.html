@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<head>
+<style>
+    #main {
+  display: flex;
+  justify-content: center; /* horizontal center */
+  align-items: center;     /* vertical center */
+  flex-direction: column;  /* stack children vertically */
+  height: 100vh;           /* give some height */
+}
+#main button {
+  padding: 10px 20px;
+  font-size: 18px;
+  cursor: pointer;
+  font-family: serif;
+}
+body {
+    background-color: pink;
+    height: 100%;
+    width: 100%;
+    margin: 0px;
+    padding: 0px;
+
+    /* Heart background */
+  background-image: url('https://files.softicons.com/download/holidays-icons/valentine-heart-icons-by-design-bolts/ico/Heart-icons-01.ico'); /* <-- replace this */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 250px; /* adjust size of heart */
+}
+</style>
+</head>
+<body>
+    <div id="main">
+    <button onclick="openLetter()">open letter</button>
+    </div>
+
+<script>
+    const SHA256 = async (input) => {
+  const textAsBuffer = new TextEncoder().encode(input);
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", textAsBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hash = hashArray
+    .map((item) => item.toString(16).padStart(2, "0"))
+    .join("");
+  return hash;
+};
+
+async function shaPow(data, n) {
+    let _=[];
+    for(let i=0; i<n; i++) {
+        if(_.length==0) _.push(await SHA256(data));
+        else _.push(await SHA256(_[_.length-1]));
+    }
+    return _;
+}
+
+function encodeChar(data, password) {
+    
+    return String.fromCharCode((256 + data.charCodeAt(0) + password.charCodeAt(0))%256);
+}
+
+function decodeChar(data, password) {
+    return String.fromCharCode((256+ data.charCodeAt(0) - password.charCodeAt(0))%256);
+}
+
+function encodeChunk(data, password) {
+    if(data.length != password.length) throw new Error('Mismatch')
+    let _ = '';
+    for(i = 0; i < data.length; i++) {
+        _+=encodeChar(data[i],password[i])
+    }
+    return _;
+}
+
+function decodeChunk(data, password) {
+    if(data.length != password.length) throw new Error('Mismatch')
+    let _ = '';
+    for(let i = 0; i < data.length; i++) {
+        _+=decodeChar(data[i],password[i])
+    }
+    return _;
+}
+
+async function encode(data, password) {
+    //Chunking
+    const n = password.length;
+    const result = [];
+    // First N characters (N = password length)
+    result.push(data.slice(0, n));
+    // Remaining data split into 64-char chunks (length of sha256)
+    const remaining = data.slice(n);
+    for (let i = 0; i < remaining.length; i += 64) {
+        result.push(remaining.slice(i, i + 64));
+    }
+    let _T='';
+    let _P=await shaPow(password,result.length);
+    for(let i = 0; i < result.length; i++) {
+        _T+=encodeChunk(result[i],_P[i].substring(0,result[i].length));
+    }
+    return _T;
+}
+
+async function decode(data, password) {
+    //Chunking
+    const n = password.length;
+    const result = [];
+    // First N characters (N = password length)
+    result.push(data.slice(0, n));
+    // Remaining data split into 64-char chunks (length of sha256)
+    const remaining = data.slice(n);
+    for (let i = 0; i < remaining.length; i += 64) {
+        result.push(remaining.slice(i, i + 64));
+    }
+    let _T='';
+    let _P=await shaPow(password,result.length);
+    for(let i = 0; i < result.length; i++) {
+        _T+=decodeChunk(result[i],_P[i].substring(0,result[i].length));
+    }
+    return _T;
+}
+
+// Setup
+
+let message = "sb]_m }©{ÊÕÏÐ¤>Ë×¡¡T¦ U§YpnuÈÃ¡:¢¥Ë¤Æ«Ø«v»©djwlXW¡¡©Ó££S¬§Ô¥«¥YÐ¥ª§£ÝÊØ¢ÙÌÊ®¤dT¢ Í§Í¬Ç feXgq@VTlÕ¡×ÎÆqÎ Ï¥¢¬¢¢×¡Ú¢Ê¢mVlÑÔ¡PÓ nRÓ¡Y§ÆvV¡ÚÖÑÖlÌ¤Ê©Ô Ø¡ÔÕdÇ£ÎbÐ«ÐÄf¨£ÏÃª×bÎÆÕÏ¤bÜÐÈ¡ØËÐÇeÈ£©¢¢Øf¬¥Ê¢Ç§ ­Ø_ÍÈÔfxÆÖ«`Í¤ÓÖ`dË¥Wds?VqR^fSÇ¦¥ÇÓÒ¥Y©¤Õa{ÐÊx ¦ÝÊ§_up ¥Ï¢¡RÌÔÈ X¥¥©¨bÉ¥ÐÙÙ¡ÐÈ¢§Ë«^ÇÕ¢fÖ¬tÓÍ¤ßµªÅÐÈ¢§¨×VÉ¦ÏÝ¡Çª¥ ÙÇ©WÌØ¢ Ç­nÖØÔY¨£tª¤°¥£Ë«T ?AQ¬Ú¯¢ÆAmeQ°<V¢ÔØÈÃ¢ªjUÆªÓ¦Í×mR[Ò«ÏÓd¥¬ÚÒÆÆË¤Ê×c@¯nB¥XÜ?TÈ ¬dÅ¥ «qVzÔÏËX~£ÔªÈ¥VÄÖ¦ÕÛt?SR¢Çª Î£]¡¤­¨Òqba£Ýp>²>?S:ÆÔ²¯<¡Ã¨ÓPdn@QQÑ¤ÍÇÍ¨ VeÛ¡o:PÑÉØ ¦ Ê]¡ÒªkPWÌÌÉj bU¢Í¨V¥Ï¤Uf>PT¦ÙÖÊ Ô«RÆ¦rmQQ¥Ò¨Î§¢Ò¡¢ÏÄ×ÎÚomTQÉÌª£Ï¬lT£Ú¡;X§£ÙÌ¬fÉ §×¥ÕPÆ¤Ø¦ ;ÒÉ¦Ï¦¥¤mXÐ©¤p>®AC¨±kËÇ¡¥²pTÓ¥Ù¡¤Y mT¥¦¦©¢Ð¦jÌÍÝÉo=?SÕÒ¤QW<£ÈË©sfWs>PÛÌÊ­ÌkSjUr=WËÊ«jRgi^@;YÇ£ ª Û¢ÊÑËnS¥ÖXÊ×Ø©£nËÎÍÈØ¦ÑÊ¤ÊÄ¥§fÇÕÓdÅ¡© £ÕÅÉ¢¡È¯¨ÎÄÕÔÖdÚ£§ÊÔ]×¦^ ¢¤ª_°cÊÔÔ§£ª¨b¢¥}É¨×`Î¥Ñ¤c`RatYaWßÐ«©T§£Ç­Ì¡ÍSÌPZCRÑªÐ¥Ò_¥È£Ê¤qÔ¢ÈÕ;QVÃÇÆ£ØÛ§]¨ ÜÇVfdc©¬m<lS­¨Æ¢§È¦«¡l¤¦©Ç¬ejÇÈbqoYW§¡£¨£ÐU¬×ÔÍÒ§ÅÆ ©¡¨¥`¬¥Ì£ÔUÎ¡§ÙÈ <>Q¡ÑÂÆ­° Xchm¬ÖÚÐTÊÌ­PZh:QÛfÏ¥ªUcp®Cmd^tÒËÒÖ¥¢SÓ¦Ûª¢¥¦§£¦©¡¬×Æa`@r£©«£T©ªÐÑÒsÈ¢ ×¡×¡Q«mW¤¥¤±APVSÄÇÑ¦£­bÖ¤¦Ï©¦ iWo@PWã=PÚÓU²lSTRSÂÅÍ «¡Ù _ÒÐØÎ©Ð b£ÛlkUT¶C´p<Î¡QÜ:ÛÊÊÙXiÔ¨l:P¨Ù­¡Vk`XBÉÐÊÔ¥©¤p§ ªÆs=UQÓÃ¤ËgcÒÝs<VÈ¥É©ÖÇ­¨YfÕª¡p¦Ûc©ÒÚYiÖÜSÔ®T¦Ã_]gbbdj BTXÕ§¥Ï¨ Ò V¦ÍÃ¤Ï×l@XÜdÐ¯ktXd«¬ª§Q ÙÖÖ°¦Y§§ÊWÅÆÐÉ¢§«¡P_g;UÕ§«Ð«Ùª¦lWÂÒß¬Î¦l±n`Ï¡¢cRßkUWP§¤ÅÐÖ§ÖÒsªÓÙÅÙÇcÅÆYnnâlÏ¦RÝnYSÑ£ «n¨Æom¶pbÒ£ÇÙ§WàpWU£Ð¥ªÏ£¡YØ¡ÑØ¤lkV©ªqUi`¤©kkWÊÈªjRbÕ¯m<ÆÄÏ £Òª£Ç_É¥ ¤q«ÈnoS¥Ñ¢­ÛseajsmQPÕÐ§¬¨fÇ¨Ë¦×¤X¤£ÐtlYà¦Ùlons?VÑ¥Æ©^ÔÂÎÙª XlàA@ÅÚ«§¢£TÞBVP¦§«ÈÃ¯sSÅ®ÔÔ×ÈrAXTSÂÌ¨¨ÛÑÆ Ò¡×s¢Êo?WPTÅÕÔÈ¤ÓÓ©R¬ÓÇ¢¤ÔÖËÏ×loPURP¢¨©e©Å¦ªPÑÙl@ß@PWl©ª­¢wB¢dÆv??mÕÈ¬¡kmRVS¡Å×QÍÇu[ÓÊÒXo=QTQRTnQÏÅÖ«o[ÅÍ¡ rÊÏÌ§ÏªÍÏhvAPUYVQXp¦¢ ÍØY¯Õ×¦Û¨Y¬ ¡¯Ì£Î@>YVRRUo¥¤ÍT¥Ë££Q¬¥¥W¦Õ¡×S£ÜË«Ë×­Ð¨¢ÈP©¨ÄÅ×¬¨¥TÄÐÆUÏ W¢Ë£ÕÒÓbRª¦Ø­§­ªUÈÇ¤ÉQÎW×¦TÏØU£Ë£«Ê¬Í«_«ÉPÕÖªØÉUÕÔ QÕX¡ÇÖ¤±ÈÈ ¤ÐËÉTÊÑª¦©Ê§`P©ÖTQËÙ¥«ÌVÊÄ¯Rª¡ÉT­­ÕÜÓ¥«ª¡Ó©SÎ¬ÔPÈ¦ WÍR©ÑÊT§Ì¥¡Ý¨¥ £ÐÜXÐ­e¡Î§¦VÎÙ¡ØXÜ£Y©ÒÝW§Ö¢ÆÉØ¡ ÙËÔbPYÇ¢«ÖÙQ¯¨«Z©SÊÔÒWÐÜ SÔÅË¥_×ÓÒ§ ÏQ©ÇS¡QÑSÜ¨ÉÔÊÈ§ª¬Y§`Å¥­RÍ©¬X¢ªÑQ¤YÅØÍ¬ÉÖÕQÖÎ£ÉS¬Öª¢¨PÅ £emVRQTWVYfÑr<SRURVURm¢v¤Ç§ÖØªÏÑQ×Õ¡ WØ¦¤§®T¨Ô°¨ T°¨Ö¥¤§aÎWÏ¤¦ÛÖØR««ÐÜÖ Ð¬TËÂ¨T¢¡ÙSÈ§ÖÕVÆÕßV¨×©×` ÅT¢¤W¦PÖÈ¤¦TÆÇÒ¦ÒP«Ô«Ö¬¡Èª Ï£Ê×ÛV¥ÙÊÍÜ^ÃØÕ S¦ÑUØÇÕTÝÓ­Q§­XÖË¥×Ë£ÍÕ×S£¦¦Y©¡­]ÄÐÅXX®ÆÌÇT¨¨VË©Æ¦²TÆÇ¬ÑÉ¦ÔSÒÈcPÆ¤¢ÛÅ¤§W×¥¥¬PÚ¢©W¬¢ÛgP§¥¥ÜÙÉÇÐÉ­ÎT¤ªU«ÌTÒÔ©©¡ÇÕªÍÖÍPÐ©ØUÎsc¨¤:YPXU¡ÕrÏÝ£Û¨Ê¡Î±TÇÔ¬¦TÃ«¦Ê¥ÐgP¥£ÌUª¤«Q¤Õ¡¡Y¤¢¢ÑÈÇÆXÑ¡­Ê  ¢ÍPÕ®ÖRÅÑÊ¨Ì¤£­ÙÑV¨ÚÖWÜ¡­Ü§Û¥ÉQÌ¨£¥U£ÐÄ©ÓÈT©°TËÔQ¡¤_ÖR¨ S«£XÒS®¦ÚØ¢ÆÔ£U¨Ë¬ØTÒ¨Ü¥®T©Ú¡ÖÌU¦ÆfÌYÍÔ¡ËS¦Ê©Û×ÙÏ Î¨ ÑØÕ¥¤ÖÔT¦¥¦X£«¥Ç¨Õ È¨ÕWËÑ¬YÚª«Õ¦ÔÐ­¨YÕ¥¥¨Q¡®¦Õ¦±UÍX¤X¬§ÕRÉ£§Ó¥ÌY¤SÖ¦¬ÊÂÙ¨ÍQ­¬ØÓÆÊ £È§]VÆ¨ØQ¡ÉXØSÅ¦RÊU¤ÚÌÕbQYÇ£¡È¬YÌ­ªÐÐQÑ¤§¦«£Ò¥¨og©qCWRWpÑqÌ®Õ¦ ÆØÈÆ¢ÒÚÐ«TÖ£ÙÖ¡ÈV¤ÔÕË¢TÝÉ§®¦Í­Õ¦_TÌÓ¦Ê× ßW §¦dYÖ«¦È¡Û§ÕÇbP¡[¥UÑ¥¡R©ÑØPÐÕR®ÖÊcªÔÈ¨ÓÈÊÙ£Y¥±£®YQ×ÛÔ¬¦§YÇ¤×¥ÜËÙ¥X£¥R¦¬Î¥WÃ¢¤¦­Æ©ÓTÒ¤ÆY§Ð¥Ç©®ÖÄ«Ç£¨Ã¨ÞQÈÓ«Õ§ÈÇÔ­g^gac`baemh sAQWYXÒQÅÑÔ¬rY ËÌ§Ww¬ÏÑÒ²¦¥US®P×£ ØÍÔÉuueÓvCnRUVPRr§¦ÕÕ¤ÍÈmT¡ÔÉ©Ù¡w¬ÏVrÞª ÌÆseÆÛ«ªÓ¢PSSrÙ¨¬££ ÊsS¥ØÚYY¨¥Ô¤Q©Ü×d]ZTq¥¤e`ÇÚtÛ¬Ú¨¥pkUU¢È¡ªu=nPu¦Ä×Î£ªuBnXYPR§Ò¤ØYÅØªªÒ  ÕÄ¥¥ ¦¦{ ÈÒ¥Øv«¬^R¢§Æ¬«Ë¨Ù¡Vr?lÚ¤Ø§¦ÈxÚÈ§Ø²ËÕ¤Ô£]¢É¡]VR ¯?Ç«ÅÚË¥¨¨¤¢dhkPhf`QÒÈªA¶[ BCÊ¬Ô§ËÑ£UÆÓË§ËsÔÒÈØÕÍÃ¦¨©§«^®nUË¨«TXÐÈªSÍUQdsUËt¢§¤sRZVÞ;VSÕ§¬×QÓÔÊ­¬ÏS¨¨Î¤¬_ÕÕwÈ£É¤­R¡­TlUYRÈÑ¤Ëª¦ÏcÆ«ÙÌ¤¥bÇXZ¤ÉÊ¨¥Ï[kB<UQVaTU¤Í©ØÊlVP¤¤ËØØ¢¤Ù«^ÐÙv§ÓÏ¦`^_T­¢£ÕÚ¥ ÆØ¡É©ÉX¤¨pÉ¨£«§§×Ú¢ÚÑÖP¢ScgeÖ¯U A<QX¦ÑÙÕ£¡Ð¤ªrÀT[ÌÊnbZÈjËÈjTcÌÄTÊhÆnXËikhSpnTSVRÅ¦É¥ÕÎg¨ÚÞ££¢ÕÙ wÐÑ¦©SmYÑÍÔ§®Â­_¢¨Õ[Æ¬¡e«ÅÉÒ¤Pb ÎÒÖªd¤§È¦Ì¾m;?gXÄ¢Ê ¥ÜÊkYRVÐ¢Ø¬SØàÊrP§`§§§ÒY_YapU¡Rbg¡ÜS§ÐhÖÚoVTÇ¢Ø©£¦©£g¨ÇÙÎPuS× ­ÈYbV¨¯Yl;XR£ÒË¦©ÏbØ¨ªÊdÌËÏË«UvX¨ ­ÇQWÒ«UnA@WYÉ¡Ä©¤¢Ù_ÃÝ¢¢ÉÏ¤¢¦Ù¨kBkTVwÒÌÓÙSÂÑÎ§ÌpVRVÕÐ¦¨WÎ¤|Ú¢¨Ñ¢U¡RÅ¬gÕÃ¡¢[bWbSkQkUÖ Q©ÈÒ¡ªBUSXÕ¥Ê¦Ú §Ï ¥Éa½<TVYVUQ³©ÖÂ Ù¢© q¦ØÂÔ×¥i¤¨_a^WÓ¦h_`Ö¨©Å§Ç_ÆÉËZWákXSUVaZ¢ÉªÝ¡£¢[]f®Ù¨Ç¢§Ç ©¥q«ªÇÒØ¡©Ëc^­Ê¦ÈÔÚfÑ¥«ÍÎ«QcRghX¡«bRÔ¤×¤ÉXU[TÙÍ_ØÒ¥Ð_gm[RR[X´BVQTPpRYXXP­BSXRYSP¥Ô¦ ¨¢kQÇÅ¢¥§ÕªÌÔQ_TfdbBYYQWËÙ£RVÊ¤ÉÖb;QRYVQWÊ¢ÎpQÒÕª«ÙCXTW³<WV_n<Uae·¡Ò¬TÙ­ÈSXR;XYY¤Ê©Í £«¬_Tur³@VUYÈ£¢Ê¦§ÏaÔ¡Ô×Ë^t;SSRµÈÂ v¥×« ÓV^Zl>VYâl²CVWSQs£ÇÔÍ§Õs<md£Å®q?oÎª¢¢¡]aaib¢";
+openLetter = (async (e) => {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const pw = urlParams.get('pw');
+    decoded=await decode(message, pw);
+    document.write(decoded)
+})
+
+
+</script>
+</body>
